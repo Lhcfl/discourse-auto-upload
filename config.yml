@@ -5,16 +5,25 @@ api_username: "system"
 require_min_length: 50
 require_max_length: 32000
 
-
+additional_tags: 
+  - "auto-upload"
 
 
 
 workflow:
-  - dir: 
-      - "MtF-wiki/content/zh-cn"
+  # - dir: 
+  #     - "MtF-wiki/content/zh-cn"
+  #   recursive: true
+  #   mode_str:
+  #     - "*.md"
+  #   tags:
+  #     - "MtF-Wiki"
+  #   category_num: 31
+  - dir:
+      - "91khr.github.io/src"
     recursive: true
     mode_str:
       - "*.md"
     tags:
-      - "MtF-Wiki"
-    category_num: 31
+      - "Seni的blog"
+    category_num: 28

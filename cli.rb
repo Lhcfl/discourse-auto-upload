@@ -47,12 +47,16 @@ def get_topic_from_file(file_name)
     str = ''
     if af
         af.each {|ch| str = str + ch;}
+    else
+        return nil
     end
     # Try get Markdown head
     topic_data = get_information_from_md_head(str)
     
     if topic_data
-        str = str[(str.index("---",2)+3)...]
+        if str.index("---",2) != nil
+             str = str[(str.index("---",2)+3)...]
+        end
     end
     # failed; Try get from content
     if topic_data == nil
@@ -142,6 +146,9 @@ client_config["workflow"].each do |works|
 
         need_files.each do |file_name|
             topic_ned = get_topic_from_file(file_name)
+            if topic_ned == nil
+                next
+            end
             if topic_ned[:raw_str].length < client_config['require_min_length']
                 next
             end
