@@ -241,6 +241,9 @@ client_config["workflow"].each do |works|
             sleep(1)
 
         end
+        Dir.chdir(root_dir)
+        lib_fil = File.new('lib.yml', 'w+')
+        lib_fil << YAML.dump(my_lib)
     end
 
 end
