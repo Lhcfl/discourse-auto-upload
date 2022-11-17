@@ -151,6 +151,7 @@ client_config["workflow"].each do |works|
         need_files = Dir[*(works['mode_str'])]
 
         need_files.each do |file_name|
+            puts "----------"
             topic_ned = get_topic_from_file(file_name)
             if topic_ned == nil
                 next
@@ -160,6 +161,7 @@ client_config["workflow"].each do |works|
                 details_failed_list[dir_name + file_name] = {
                     message: "字数过少"
                 }
+                puts "字数过少，自动跳过"
                 next
             end
             if topic_ned[:raw_str].length > client_config['require_max_length']
@@ -167,6 +169,7 @@ client_config["workflow"].each do |works|
                 details_failed_list[dir_name + file_name] = {
                     message: "字数过多"
                 }
+                puts "字数过多，自动跳过"
                 next
             end
 
@@ -213,6 +216,9 @@ client_config["workflow"].each do |works|
                 puts "Failed: "
                 puts e.message  
                 puts e.backtrace.inspect 
+                puts "-----------"
+                puts topic_ned[:other_information]
+
                 if try_time <= 3
                     puts "Have try #{try_time} times, Wait for 10 sec for try again"
                     sleep(10)
@@ -229,10 +235,7 @@ client_config["workflow"].each do |works|
             end
 
             puts "-----------"
-            puts "Title: #{topic_ned[:title]}"
-            puts "-----------"
-            puts topic_ned[:other_information]
-            puts "-----------"
+            puts "Title: #{topic_ned[:title]} 任务已执行完成"
             puts "Wait for 1 sec for next"
             sleep(1)
 
