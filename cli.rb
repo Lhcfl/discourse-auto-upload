@@ -162,13 +162,17 @@ client_config["workflow"].each do |works|
                 next
             end
 
+            if topic_ned[:tags].class == String
+                topic_ned[:tags] = [ topic_ned[:tags] ]
+            end
+
             try_time = 1
             begin
                 total_success = total_success + 1
                 if (my_lib["#{dir_name}/#{file_name}"])
                     puts '已发布过该主题, 尝试修订'
                     client.edit_post(
-                        my_lib["#{dir_name}/#{file_name}"],
+                        my_lib["#{dir_name}/#{file_name}"]["id"],
                         topic_ned[:raw_str]
                     )
                 else
@@ -180,20 +184,33 @@ client_config["workflow"].each do |works|
                         raw: topic_ned[:raw_str],
                         tags: client_config["additional_tags"] + works["tags"] + topic_ned[:tags],
                     )
-                    my_lib["#{dir_name}/#{file_name}"] = info["id"];
+                    
+                    my_lib["#{dir_name}/#{file_name}"] = {
+                        "id" => info["id"],
+                        "topic_id" => info["topic_id"]
+                    }
+                    
                 end
-                
+                # change timemap
+                if topic_ned[:other_information]
+                    if topic_ned[:other_information]["date"]
+                        client.edit_topic_timestamp(
+                            my_lib["#{dir_name}/#{file_name}"]["topic_id"], 
+                            topic_ned[:other_information]["date"].to_i
+                        )
+                    end
+                end
             rescue Exception => e  
                 try_time = try_time + 1
                 puts "Failed: "
                 puts e.message  
                 puts e.backtrace.inspect 
                 if try_time <= 3
-                    puts "Have try #{try_time} times, Wait for 5 sec for try again"
-                    sleep(5)
+                    puts "Have try #{try_time} times, Wait for 10 sec for try again"
+                    sleep(10)
                     retry
                 else 
-                    failed_list << (dir_name + file_name)
+                    failed_list << "#{dir_name}/#{file_name}"
                     details_failed_list[dir_name + file_name] = {
                         message: e.message,
                         inspect: e.backtrace.inspect,

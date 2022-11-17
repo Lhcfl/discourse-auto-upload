@@ -20,10 +20,10 @@ workflow:
   #     - "MtF-Wiki"
   #   category_num: 31
   - dir:
-      - "test_folder"
+      - "lhcfl.github.io.data/source"
     recursive: true
     mode_str:
       - "*.md"
     tags:
-      - "重复发送测试"
+      - "blog"
     category_num: 28
