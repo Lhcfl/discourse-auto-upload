@@ -4,7 +4,9 @@ require "discourse_api"
 require "yaml"
 
 client_config = YAML.load(File.open("config.yml"))
-
+if client_config["additional_tags"] == nil
+    client_config["additional_tags"] = []
+end
 
 def get_information_from_md_head(content)
     ret = nil;
@@ -48,6 +50,9 @@ def get_topic_from_file(file_name)
     # Try get Markdown head
     topic_data = get_information_from_md_head(str)
     
+    if topic_data
+        str = str[(str.index("---",2)+3)...]
+    end
     # failed; Try get from content
     if topic_data == nil
         topic_data = {"title" => nil}
@@ -85,6 +90,10 @@ def get_topic_from_file(file_name)
         puts e.backtrace.inspect 
     end
 
+    # change tag
+    if topic_data['tags'] == nil
+        topic_data['tags'] = []
+    end
     return {
         title: topic_data["title"],
         tags: topic_data['tags'],
@@ -129,7 +138,7 @@ client_config["work_dir"].each do |dir_name|
                 auto_track: false,
                 title: topic_ned[:title],
                 raw: topic_ned[:raw_str],
-                tags: topic_ned[:tags],
+                tags: client_config["additional_tags"] + topic_ned[:tags],
             )
         rescue Exception => e  
             try_time = try_time + 1
@@ -157,10 +166,21 @@ client_config["work_dir"].each do |dir_name|
         puts "-----------"
         puts topic_ned[:other_information]
         puts "-----------"
-        puts "Wait for 2 sec for next"
-        sleep(2)
+        puts "Wait for 1 sec for next"
+        sleep(1)
 
     end
 end
 
-puts: "ALL OK! #{total_success} uploaded, #{failed_list.length} failed, they are:"
+puts "ALL OK! #{total_success} uploaded, #{failed_list.length} failed, they are:"
+
+failed_list.each do |failed_file_name|
+    puts "- #{failed_file_name}"
+end
+
+if failed_list.length > 0
+    log_file = File.new('failed.log', 'w')
+    logfile.syswrite(YAML.dump(details_failed_list))
+
+    puts "Look failed.log to see details"
+end
