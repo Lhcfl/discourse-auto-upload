@@ -11,14 +11,14 @@ additional_tags:
 
 
 workflow:
-  # - dir: 
-  #     - "MtF-wiki/content/zh-cn"
-  #   recursive: true
-  #   mode_str:
-  #     - "*.md"
-  #   tags:
-  #     - "MtF-Wiki"
-  #   category_num: 31
+  - dir: 
+      - "MtF-wiki/content/zh-cn"
+    recursive: true
+    mode_str:
+      - "*.md"
+    tags:
+      - "MtF-Wiki"
+    category_num: 31
   - dir:
       - "lhcfl.github.io.data/source"
     recursive: true
