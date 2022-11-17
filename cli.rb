@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 require "discourse_api"
 require "yaml"
+require 'find'
 
 client_config = YAML.load(File.open("config.yml"))
 if client_config["additional_tags"] == nil
@@ -11,7 +12,7 @@ end
 def get_information_from_md_head(content)
     ret = nil;
     tmp = content.strip.split("---")
-    if tmp[0] == '' && tmp.length >= 3
+    if tmp[0] == '' && tmp.length >= 2
         begin
             ret = YAML.load(tmp[1])
         rescue
@@ -114,62 +115,83 @@ failed_list = []
 details_failed_list = {}
 total_success = 0
 
-
-client_config["work_dir"].each do |dir_name|
-    Dir.chdir(root_dir)
-    Dir.chdir(dir_name)
-    need_files = Dir[*(client_config['mode_str'])]
-
-    need_files.each do |file_name|
-        topic_ned = get_topic_from_file(file_name)
-        if topic_ned[:raw_str].length < client_config['require_min_length']
-            next
-        end
-        if topic_ned[:raw_str].length > client_config['require_max_length']
-            next
-        end
-
-        try_time = 1
-        begin
-            total_success = total_success + 1
-            client.create_topic(
-                category: client_config['category_num'],
-                skip_validations: true,
-                auto_track: false,
-                title: topic_ned[:title],
-                raw: topic_ned[:raw_str],
-                tags: client_config["additional_tags"] + topic_ned[:tags],
-            )
-        rescue Exception => e  
-            try_time = try_time + 1
-            puts "Failed: "
-            puts e.message  
-            puts e.backtrace.inspect 
-            if try_time <= 3
-                puts "Have try #{try_time} times, Wait for 5 sec for try again"
-                sleep(5)
-                retry
-            else 
-                failed_list << file_name
-                details_failed_list[file_name] = {
-                    message: e.message,
-                    inspect: e.backtrace.inspect,
-                    details: topic_ned[:other_information],
-                    raw_str: topic_ned[:raw_str]
-                }
+client_config["workflow"].each do |works|
+    to_iter_dir = []
+    if works["recursive"]
+        works["dir"].each do |paths|
+            Find.find(paths).each do |adds|
+                if FileTest.directory? adds
+                    to_iter_dir << adds
+                end
             end
         end
-
-        puts topic_ned[:raw_str]
-        puts "-----------"
-        puts "Title: #{topic_ned[:title]}"
-        puts "-----------"
-        puts topic_ned[:other_information]
-        puts "-----------"
-        puts "Wait for 1 sec for next"
-        sleep(1)
-
+    else
+        to_iter_dir = works["dir"]
     end
+    
+    if works["tags"] == nil
+        works["tags"] = []
+    end
+        
+    
+    to_iter_dir.each do |dir_name|
+        Dir.chdir(root_dir)
+        Dir.chdir(dir_name)
+        
+        need_files = Dir[*(works['mode_str'])]
+
+        need_files.each do |file_name|
+            topic_ned = get_topic_from_file(file_name)
+            if topic_ned[:raw_str].length < client_config['require_min_length']
+                next
+            end
+            if topic_ned[:raw_str].length > client_config['require_max_length']
+                next
+            end
+
+            try_time = 1
+            begin
+                total_success = total_success + 1
+                client.create_topic(
+                    category: works['category_num'],
+                    skip_validations: true,
+                    auto_track: false,
+                    title: topic_ned[:title],
+                    raw: topic_ned[:raw_str],
+                    tags: client_config["additional_tags"] + works["tags"] + topic_ned[:tags],
+                )
+            rescue Exception => e  
+                try_time = try_time + 1
+                puts "Failed: "
+                puts e.message  
+                puts e.backtrace.inspect 
+                if try_time <= 3
+                    puts "Have try #{try_time} times, Wait for 5 sec for try again"
+                    sleep(5)
+                    retry
+                else 
+                    failed_list << (dir_name + file_name)
+                    details_failed_list[dir_name + file_name] = {
+                        message: e.message,
+                        inspect: e.backtrace.inspect,
+                        details: topic_ned[:other_information],
+                        raw_str: topic_ned[:raw_str]
+                    }
+                end
+            end
+
+            puts topic_ned[:raw_str]
+            puts "-----------"
+            puts "Title: #{topic_ned[:title]}"
+            puts "-----------"
+            puts topic_ned[:other_information]
+            puts "-----------"
+            puts "Wait for 1 sec for next"
+            sleep(1)
+
+        end
+    end
+
 end
 
 puts "ALL OK! #{total_success} uploaded, #{failed_list.length} failed, they are:"
