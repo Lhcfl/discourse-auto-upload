@@ -1,0 +1,16 @@
+website_url: "http://172.17.166.115"
+api_key: "b82b104597eb26d1f1b40a80e13eff61ef861b7f462afcfa8de775c6e283f931"
+api_username: "system"
+
+work_dir: 
+  - "RLE-wiki/docs/campus"
+mode_str: 
+  - "*.md"
+
+require_min_length: 1
+require_max_length: 32000
+
+category_num: 29
+
+additional_tags:
+  - "RLE.Wiki"
