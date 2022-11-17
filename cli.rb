@@ -156,9 +156,17 @@ client_config["workflow"].each do |works|
                 next
             end
             if topic_ned[:raw_str].length < client_config['require_min_length']
+                failed_list << "#{dir_name}/#{file_name}"
+                details_failed_list[dir_name + file_name] = {
+                    message: "字数过少"
+                }
                 next
             end
             if topic_ned[:raw_str].length > client_config['require_max_length']
+                failed_list << "#{dir_name}/#{file_name}"
+                details_failed_list[dir_name + file_name] = {
+                    message: "字数过多"
+                }
                 next
             end
 
