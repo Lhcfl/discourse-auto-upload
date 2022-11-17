@@ -3,7 +3,7 @@ api_key: "b82b104597eb26d1f1b40a80e13eff61ef861b7f462afcfa8de775c6e283f931"
 api_username: "system"
 
 require_min_length: 4
-require_max_length: 32000
+require_max_length: 64000
 
 additional_tags: 
   - "auto-upload"
@@ -11,19 +11,19 @@ additional_tags:
 
 
 workflow:
-  # - dir: 
-  #     - "MtF-wiki/content/zh-cn"
-  #   recursive: true
-  #   mode_str:
-  #     - "*.md"
-  #   tags:
-  #     - "MtF-Wiki"
-  #   category_num: 31
-  - dir:
-      - "lhcfl.github.io.data/source"
+  - dir: 
+      - "RLE-wiki/docs/campus"
     recursive: true
     mode_str:
       - "*.md"
     tags:
-      - "blog"
-    category_num: 28
+      - "RLE-Wiki"
+    category_num: 29
+  # - dir:
+  #     - "lhcfl.github.io.data/source"
+  #   recursive: true
+  #   mode_str:
+  #     - "*.md"
+  #   tags:
+  #     - "blog"
+  #   category_num: 28
