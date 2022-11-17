@@ -8,6 +8,15 @@ client_config = YAML.load(File.open("config.yml"))
 if client_config["additional_tags"] == nil
     client_config["additional_tags"] = []
 end
+client = DiscourseApi::Client.new(client_config["website_url"])
+client.api_key = client_config["api_key"]
+client.api_username = client_config['api_username']
+
+lib_file = File.open('lib.yml', 'r+')
+my_lib = YAML.load(lib_file)
+if !my_lib
+    my_lib = {}
+end
 
 def get_information_from_md_head(content)
     ret = nil;
@@ -25,13 +34,14 @@ end
 def get_tiltle_from_content(content)
     ttl = content
     # get Markdown title
-    if content.index('# ')
+    if content.index("\# ")
         ttl = content.split('# ')[1].split("\n")[0]
     end
     # no Markdown title, get first line
     ttl.split("\n").each do |lines|
         if lines != ''
             ttl = lines[0..50]
+            break
         end
     end
     # no first line, return nil
@@ -109,10 +119,6 @@ end
 
 
 
-client = DiscourseApi::Client.new(client_config["website_url"])
-client.api_key = client_config["api_key"]
-client.api_username = client_config['api_username']
-
 root_dir = Dir.pwd
 
 failed_list = []
@@ -159,14 +165,24 @@ client_config["workflow"].each do |works|
             try_time = 1
             begin
                 total_success = total_success + 1
-                client.create_topic(
-                    category: works['category_num'],
-                    skip_validations: true,
-                    auto_track: false,
-                    title: topic_ned[:title],
-                    raw: topic_ned[:raw_str],
-                    tags: client_config["additional_tags"] + works["tags"] + topic_ned[:tags],
-                )
+                if (my_lib["#{dir_name}/#{file_name}"])
+                    puts '已发布过该主题, 尝试修订'
+                    client.edit_post(
+                        my_lib["#{dir_name}/#{file_name}"],
+                        topic_ned[:raw_str]
+                    )
+                else
+                    info = client.create_topic(
+                        category: works['category_num'],
+                        skip_validations: true,
+                        auto_track: false,
+                        title: topic_ned[:title],
+                        raw: topic_ned[:raw_str],
+                        tags: client_config["additional_tags"] + works["tags"] + topic_ned[:tags],
+                    )
+                    my_lib["#{dir_name}/#{file_name}"] = info["id"];
+                end
+                
             rescue Exception => e  
                 try_time = try_time + 1
                 puts "Failed: "
@@ -187,7 +203,6 @@ client_config["workflow"].each do |works|
                 end
             end
 
-            puts topic_ned[:raw_str]
             puts "-----------"
             puts "Title: #{topic_ned[:title]}"
             puts "-----------"
@@ -203,13 +218,19 @@ end
 
 puts "ALL OK! #{total_success} uploaded, #{failed_list.length} failed, they are:"
 
+
+Dir.chdir(root_dir)
+lib_fil = File.new('lib.yml', 'w+')
+lib_fil << YAML.dump(my_lib)
+# puts YAML.dump(my_lib)
+
 failed_list.each do |failed_file_name|
     puts "- #{failed_file_name}"
 end
 
 if failed_list.length > 0
     log_file = File.new('failed.log', 'w')
-    logfile.syswrite(YAML.dump(details_failed_list))
+    log_file.syswrite(YAML.dump(details_failed_list))
 
     puts "Look failed.log to see details"
 end

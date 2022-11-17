@@ -2,7 +2,7 @@ website_url: "http://172.17.166.115"
 api_key: "b82b104597eb26d1f1b40a80e13eff61ef861b7f462afcfa8de775c6e283f931"
 api_username: "system"
 
-require_min_length: 50
+require_min_length: 4
 require_max_length: 32000
 
 additional_tags: 
@@ -20,10 +20,10 @@ workflow:
   #     - "MtF-Wiki"
   #   category_num: 31
   - dir:
-      - "91khr.github.io/src"
+      - "test_folder"
     recursive: true
     mode_str:
       - "*.md"
     tags:
-      - "Seni的blog"
+      - "重复发送测试"
     category_num: 28
