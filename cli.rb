@@ -126,6 +126,7 @@ details_failed_list = {}
 total_success = 0
 
 client_config["workflow"].each do |works|
+    Dir.chdir(root_dir)
     to_iter_dir = []
     if works["recursive"]
         works["dir"].each do |paths|
