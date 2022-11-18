@@ -125,128 +125,156 @@ failed_list = []
 details_failed_list = {}
 total_success = 0
 
-client_config["workflow"].each do |works|
-    Dir.chdir(root_dir)
-    to_iter_dir = []
-    if works["recursive"]
-        works["dir"].each do |paths|
-            Find.find(paths).each do |adds|
-                if FileTest.directory? adds
-                    to_iter_dir << adds
-                end
-            end
-        end
-    else
-        to_iter_dir = works["dir"]
-    end
-    
-    if works["tags"] == nil
-        works["tags"] = []
-    end
-        
-    
-    to_iter_dir.each do |dir_name|
+begin
+    client_config["workflow"].each do |works|
         Dir.chdir(root_dir)
-        Dir.chdir(dir_name)
-        
-        need_files = Dir[*(works['mode_str'])]
-
-        need_files.each do |file_name|
-            puts "----------"
-            topic_ned = get_topic_from_file(file_name)
-            if topic_ned == nil
-                next
-            end
-            if topic_ned[:raw_str].length < client_config['require_min_length']
-                failed_list << "#{dir_name}/#{file_name}"
-                details_failed_list[dir_name + file_name] = {
-                    message: "字数过少"
-                }
-                puts "字数过少，自动跳过"
-                next
-            end
-            if topic_ned[:raw_str].length > client_config['require_max_length']
-                failed_list << "#{dir_name}/#{file_name}"
-                details_failed_list[dir_name + file_name] = {
-                    message: "字数过多"
-                }
-                puts "字数过多，自动跳过"
-                next
-            end
-
-            if topic_ned[:tags].class == String
-                topic_ned[:tags] = [ topic_ned[:tags] ]
-            end
-
-            try_time = 1
-            begin
-                total_success = total_success + 1
-                if (my_lib["#{dir_name}/#{file_name}"])
-                    puts '已发布过该主题, 尝试修订'
-                    client.edit_post(
-                        my_lib["#{dir_name}/#{file_name}"]["id"],
-                        topic_ned[:raw_str]
-                    )
-                else
-                    info = client.create_topic(
-                        category: works['category_num'],
-                        skip_validations: true,
-                        auto_track: false,
-                        title: topic_ned[:title],
-                        raw: topic_ned[:raw_str],
-                        tags: client_config["additional_tags"] + works["tags"] + topic_ned[:tags],
-                    )
-                    
-                    my_lib["#{dir_name}/#{file_name}"] = {
-                        "id" => info["id"],
-                        "topic_id" => info["topic_id"]
-                    }
-                    
-                end
-                # change timemap
-                if topic_ned[:other_information]
-                    if topic_ned[:other_information]["date"]
-                        client.edit_topic_timestamp(
-                            my_lib["#{dir_name}/#{file_name}"]["topic_id"], 
-                            topic_ned[:other_information]["date"].to_i
-                        )
+        to_iter_dir = []
+        if works["recursive"]
+            works["dir"].each do |paths|
+                Find.find(paths).each do |adds|
+                    if FileTest.directory? adds
+                        to_iter_dir << adds
                     end
                 end
-            rescue Exception => e  
-                try_time = try_time + 1
-                puts "Failed: "
-                puts e.message  
-                puts e.backtrace.inspect 
-                puts "-----------"
-                puts topic_ned[:other_information]
+            end
+        else
+            to_iter_dir = works["dir"]
+        end
+        
+        if works["tags"] == nil
+            works["tags"] = []
+        end
+            
+        
+        to_iter_dir.each do |dir_name|
+            Dir.chdir(root_dir)
+            Dir.chdir(dir_name)
+            
+            need_files = Dir[*(works['mode_str'])]
 
-                if try_time <= 3
-                    puts "Have try #{try_time} times, Wait for 10 sec for try again"
-                    sleep(10)
-                    retry
-                else 
+            need_files.each do |file_name|
+                puts "----------"
+                topic_ned = get_topic_from_file(file_name)
+                if topic_ned == nil
+                    next
+                end
+                if topic_ned[:raw_str].length < client_config['require_min_length']
                     failed_list << "#{dir_name}/#{file_name}"
                     details_failed_list[dir_name + file_name] = {
-                        message: e.message,
-                        inspect: e.backtrace.inspect,
-                        details: topic_ned[:other_information],
-                        raw_str: topic_ned[:raw_str]
+                        message: "字数过少"
                     }
+                    puts "字数过少，自动跳过"
+                    next
                 end
+                if topic_ned[:raw_str].length > client_config['require_max_length']
+                    failed_list << "#{dir_name}/#{file_name}"
+                    details_failed_list[dir_name + file_name] = {
+                        message: "字数过多"
+                    }
+                    puts "字数过多，自动跳过"
+                    next
+                end
+
+                if topic_ned[:tags].class == String
+                    topic_ned[:tags] = [ topic_ned[:tags] ]
+                end
+
+                try_time = 1
+                begin
+                    total_success = total_success + 1
+                    info = {}
+                    if (my_lib["#{dir_name}/#{file_name}"])
+                        puts '已发布过该主题, 尝试修订'
+                        client.edit_post(
+                            my_lib["#{dir_name}/#{file_name}"]["id"],
+                            topic_ned[:raw_str]
+                        )
+                    else
+                        if topic_ned[:other_information] and topic_ned[:other_information]["date"]
+                            info = client.create_topic(
+                                category: works['category_num'],
+                                skip_validations: true,
+                                auto_track: false,
+                                title: topic_ned[:title],
+                                raw: topic_ned[:raw_str],
+                                tags: client_config["additional_tags"] + works["tags"] + topic_ned[:tags],
+                                created_at: topic_ned[:other_information]["date"]
+                            )
+                        else
+                            info = client.create_topic(
+                                category: works['category_num'],
+                                skip_validations: true,
+                                auto_track: false,
+                                title: topic_ned[:title],
+                                raw: topic_ned[:raw_str],
+                                tags: client_config["additional_tags"] + works["tags"] + topic_ned[:tags],
+                            )
+                        end
+                        my_lib["#{dir_name}/#{file_name}"] = {
+                            "id" => info["id"],
+                            "topic_id" => info["topic_id"]
+                        }
+                        
+                    end
+                    # if availabe, change timemap
+                    begin
+                        if client_config["edit_time_stamp"]
+                            if topic_ned[:other_information] and topic_ned[:other_information]["date"]
+                                client.edit_topic_timestamp(
+                                    my_lib["#{dir_name}/#{file_name}"]["topic_id"], 
+                                    topic_ned[:other_information]["date"].to_i
+                                )
+                            end
+                        end
+                    rescue Exception => e  
+                        puts "时间戳更改失败： "
+                        puts e.message  
+                        puts e.backtrace.inspect 
+                        puts "-----------"
+                    end
+                rescue Exception => e  
+                    try_time = try_time + 1
+                    puts "Failed: "
+                    puts e.message  
+                    puts e.backtrace.inspect 
+                    puts "-----------"
+                    puts topic_ned[:other_information]
+
+                    if try_time <= 3
+                        puts "Have try #{try_time} times, Wait for 10 sec for try again"
+                        sleep(10)
+                        retry
+                    else 
+                        failed_list << "#{dir_name}/#{file_name}"
+                        details_failed_list[dir_name + file_name] = {
+                            message: e.message,
+                            inspect: e.backtrace.inspect,
+                            details: topic_ned[:other_information],
+                            raw_str: topic_ned[:raw_str]
+                        }
+                    end
+                end
+
+                puts "-----------"
+                puts "Title: #{topic_ned[:title]} 任务已执行完成"
+                puts "Wait for 1 sec for next"
+                sleep(1)
+
             end
-
-            puts "-----------"
-            puts "Title: #{topic_ned[:title]} 任务已执行完成"
-            puts "Wait for 1 sec for next"
-            sleep(1)
-
         end
-        Dir.chdir(root_dir)
-        lib_fil = File.new('lib.yml', 'w+')
-        lib_fil << YAML.dump(my_lib)
-    end
 
-end
+    end
+rescue Exception => e
+    puts "致命错误："
+    puts e.message  
+    puts e.backtrace.inspect 
+    puts "-----------"
+    puts "#{total_success} uploaded, #{failed_list.length} failed, they are:"
+ensure
+    Dir.chdir(root_dir)
+    lib_fil = File.new('lib.yml', 'w+')
+    lib_fil << YAML.dump(my_lib)
+end 
 
 puts "ALL OK! #{total_success} uploaded, #{failed_list.length} failed, they are:"
 
