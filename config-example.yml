@@ -1,0 +1,42 @@
+website_url: "http://example.com"
+api_key: "b82b104597eb26d1f1b40a80e13eff61ef861b7f462afcfa8de775c6e283f931"
+api_username: "system"
+
+require_min_length: 4 #帖子不被跳过上传的最小长度
+require_max_length: 64000 #帖子不被跳过上传的最大长度
+
+additional_tags: 
+  - "auto-upload"
+  # 可选：全局增加tag
+
+edit_time_stamp: false
+# 当你的api具有管理员权限时，允许更改时间戳
+
+workflow: # 可以同时拥有几个上传工作
+  - dir: 
+      - "RLE-wiki/docs/campus"
+      # 相对路径
+    recursive: true
+      # 允许在该工作下递归
+    mode_str:
+      - "*.md"
+      # 会被上传的文件的模式字符串
+    tags:
+      - "RLE-Wiki"
+      # 附加标签
+    category_num: 29
+      # 发布类别
+  - dir:
+      - "dir1"
+      - "dir1/dir with space"
+    recursive: false
+    # 你也可以不允许递归
+    mode_str:
+      - "README.*"
+      - "123.html"
+      - "*.md"
+    tags:
+      - "a"
+      - "b"
+      - "c"
+    category_num: 31
