@@ -5,18 +5,17 @@ require "yaml"
 require 'find'
 
 client_config = YAML.load(File.open("config.yml"))
-if client_config["additional_tags"] == nil
-    client_config["additional_tags"] = []
-end
+
+client_config["additional_tags"] or client_config["additional_tags"] = []
+
 client = DiscourseApi::Client.new(client_config["website_url"])
 client.api_key = client_config["api_key"]
 client.api_username = client_config['api_username']
 
 lib_file = File.open('lib.yml', 'r+')
 my_lib = YAML.load(lib_file)
-if !my_lib
-    my_lib = {}
-end
+
+my_lib or my_lib = {}
 
 def get_information_from_md_head(content)
     ret = nil;
@@ -131,19 +130,14 @@ client_config["workflow"].each do |works|
     if works["recursive"]
         works["dir"].each do |paths|
             Find.find(paths).each do |adds|
-                if FileTest.directory? adds
-                    to_iter_dir << adds
-                end
+                (FileTest.directory? adds) and to_iter_dir << adds
             end
         end
     else
         to_iter_dir = works["dir"]
     end
     
-    if works["tags"] == nil
-        works["tags"] = []
-    end
-        
+    works["tags"] or works["tags"] = []
     
     to_iter_dir.each do |dir_name|
         Dir.chdir(root_dir)
@@ -154,9 +148,9 @@ client_config["workflow"].each do |works|
         need_files.each do |file_name|
             puts "----------"
             topic_ned = get_topic_from_file(file_name)
-            if topic_ned == nil
-                next
-            end
+            # 文件内容获取失败；跳过
+            topic_ned or next
+            # 已获取文件内容
             if topic_ned[:raw_str].length < client_config['require_min_length']
                 failed_list << "#{dir_name}/#{file_name}"
                 details_failed_list[dir_name + file_name] = {
@@ -178,7 +172,7 @@ client_config["workflow"].each do |works|
                 topic_ned[:tags] = [ topic_ned[:tags] ]
             end
 
-            try_time = 1
+            try_time = 0
             begin
                 total_success = total_success + 1
                 if (my_lib["#{dir_name}/#{file_name}"])
